@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    kubernetes.infra.app: {{ .Release.Name }}
+spec:
+  selector:
+    app: {{ .Release.Name }}
+    version: v1
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: {{ .Values.container.port }}
+  type: {{ .Values.service.type }}

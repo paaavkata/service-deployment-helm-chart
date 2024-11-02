@@ -1,0 +1,10 @@
+apiVersion: v2
+name: service-deployment-helm-chart
+description: Mother Helm chart that will be used as a template to deploy all services
+type: application
+version: 1.0.0
+sources:
+  - https://github.com/paaavkata/service-deployment-helm-chart
+maintainers:
+  - name: Pavel Damyanov
+    url: https://github.com/paaavkata

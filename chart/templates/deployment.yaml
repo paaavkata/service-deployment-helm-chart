@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    kubernetes.infra.app: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.deployment.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}
+        version: v1
+    spec:
+      {{- if .Values.image.pullSecret }}
+      imagePullSecrets:
+        - name: {{ .Values.image.pullSecret }}
+      {{- end }}
+      containers:
+        - name: {{ .Release.Name }}
+          image: {{ .Values.image.registry }}/{{ .Values.image.app }}/{{ .Values.image.service }}:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.container.port }}
+          env:
+            # Add environment variables if any
+            {{- if .Values.envVars }}
+            {{- range $secret := .Values.envVars }}
+            - name: {{ $secret.name }}
+              value: {{ $secret.value | quote }}
+            {{- end }}
+            {{- end }}
+            # Add secret environment variables if any
+            {{- if .Values.secretEnvVars }}
+            {{- range $secret := .Values.secretEnvVars }}
+            - name: {{ $secret.name }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secret.secretName }}
+                  key: {{ $secret.secretKey }}
+            {{- end }}
+            {{- end }}
