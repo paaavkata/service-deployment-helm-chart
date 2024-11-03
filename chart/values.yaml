@@ -1,0 +1,37 @@
+parent:
+  environment: dev
+  image:
+    registry: 929572853995.dkr.ecr.eu-west-1.amazonaws.com
+    app: file-convert/app
+    service: example-service
+    tag: latest
+    pullPolicy: Always
+    pullSecret: regcred
+  service:
+    port: 80
+    type: ClusterIP
+  deployment:
+    replicas: 1
+  container:
+    port: 8080
+    host: 127.0.0.1
+  ingress:
+    host: file-convert.online
+    path: /api/example
+  admin_password_secret_name: fc-example-dev-admin-password
+  envVars:
+    - name: ENV
+      value: dev
+    - name: HOST
+      value: file-convert.online
+    - name: APP_PORT
+      value: 8080
+    - name: EMAIL_SERVICE_URL
+      value: http://email-service/send-email
+  secretEnvVars:
+    - name: DB_URI
+      secretName: fc-example-dev-db-pguser-example-user
+      secretKey: uri
+    - name: JWT_SECRET
+      secretName: fc-example-dev-jwt-secret
+      secretKey: secret
