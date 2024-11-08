@@ -17,6 +17,7 @@ spec:
           name: {{ .Release.Name }}
           port: {{ .Values.service.port }}
     {{- if .Values.ingress.subdomains }}
+    {{- $root := . }}
     {{- range $v := .Values.ingress.subdomains }}
     - match: Host(`{{ $v }}.{{ $root.Values.ingress.host }}`) && PathPrefix(`/`)
       kind: Rule
