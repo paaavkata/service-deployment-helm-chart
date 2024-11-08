@@ -18,6 +18,7 @@ parent:
   ingress:
     host: file-convert.online
     path: /api/example
+    stripPrefix: true
   admin_password_secret_name: fc-example-dev-admin-password
   envVars:
     - name: ENV
