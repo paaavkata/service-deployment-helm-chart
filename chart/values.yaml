@@ -15,9 +15,9 @@ parent:
     port: 8080
     host: 127.0.0.1
   ingress:
-    host: file-convert.online
     path: /api/example
     stripPrefix: true
+  host: file-convert.online
   admin_password_secret_name: fc-example-dev-admin-password
   envVars:
     - name: ENV

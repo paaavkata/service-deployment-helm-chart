@@ -28,6 +28,8 @@ spec:
             - name: http
               containerPort: {{ .Values.container.port }}
           env:
+            - name: HOST
+              value: {{ .Values.host }}
             # Add environment variables if any
             {{- if .Values.envVars }}
             {{- range $secret := .Values.envVars }}

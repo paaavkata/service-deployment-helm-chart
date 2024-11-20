@@ -6,7 +6,7 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`{{ .Values.ingress.path }}`)
+    - match: Host(`{{ .Values.host }}`) && PathPrefix(`{{ .Values.ingress.path }}`)
       {{- if .Values.ingress.stripPrefix }}
       middlewares:
       - name: {{ .Release.Name }}
@@ -19,7 +19,7 @@ spec:
     {{- if .Values.ingress.subdomains }}
     {{- $root := . }}
     {{- range $v := .Values.ingress.subdomains }}
-    - match: Host(`{{ $v }}.{{ $root.Values.ingress.host }}`) && PathPrefix(`/`)
+    - match: Host(`{{ $v }}.{{ $root.Values.host }}`) && PathPrefix(`/`)
       kind: Rule
       services:
         - name: {{ $root.Release.Name }}
