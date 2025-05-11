@@ -5,7 +5,6 @@ parent:
     service: example-service
     tag: latest
     pullPolicy: Always
-    pullSecret: regcred
   service:
     port: 80
     type: ClusterIP
@@ -18,7 +17,14 @@ parent:
     path: /api/example
     stripPrefix: true
   host: file-convert.online
-  admin_password_secret_name: fc-example-dev-admin-password
+  enableServiceLinks: false
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
   envVars:
     - name: ENV
       value: dev
