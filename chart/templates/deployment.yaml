@@ -38,6 +38,8 @@ spec:
           env:
             - name: HOST
               value: {{ .Values.host }}
+            - name: ENV
+              value: {{ .Values.environment }}
             # Add environment variables if any
             {{- if .Values.envVars }}
             {{- range $secret := .Values.envVars }}
