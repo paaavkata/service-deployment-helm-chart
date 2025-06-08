@@ -1,5 +1,6 @@
 # Global configuration
 global:
+  appName: file-convert
   environment: dev
   domain: file-convert.online
   imageRegistry: 929572853995.dkr.ecr.eu-west-1.amazonaws.com
