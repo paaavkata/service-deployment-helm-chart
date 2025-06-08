@@ -1,0 +1,23 @@
+{{- if and .Values.metrics.enabled (not .Values.metrics.disabled) }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "service-deployment-helm-chart.fullname" . }}
+  labels:
+    {{- include "service-deployment-helm-chart.labels" . | nindent 4 }}
+    {{- with .Values.metrics.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  endpoints:
+    - port: metrics
+      path: {{ .Values.metrics.path }}
+      interval: {{ .Values.metrics.interval }}
+      scrapeTimeout: {{ .Values.metrics.scrapeTimeout }}
+  selector:
+    matchLabels:
+      {{- include "service-deployment-helm-chart.selectorLabels" . | nindent 6 }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+{{- end }} 

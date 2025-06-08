@@ -1,53 +1,141 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Release.Name }}
+  name: {{ include "service-deployment-helm-chart.fullname" . }}
   labels:
-    kubernetes.infra.app: {{ .Release.Name }}
+    {{- include "service-deployment-helm-chart.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.deployment.replicas }}
+  strategy:
+    type: {{ .Values.deployment.strategy.type }}
+    {{- if eq .Values.deployment.strategy.type "RollingUpdate" }}
+    rollingUpdate:
+      maxSurge: {{ .Values.deployment.strategy.rollingUpdate.maxSurge }}
+      maxUnavailable: {{ .Values.deployment.strategy.rollingUpdate.maxUnavailable }}
+    {{- end }}
   selector:
     matchLabels:
-      app: {{ .Release.Name }}
-      version: v1
+      {{- include "service-deployment-helm-chart.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        app: {{ .Release.Name }}
-        version: v1
+        {{- include "service-deployment-helm-chart.selectorLabels" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print .Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
-      enableServiceLinks: {{ .Values.enableServiceLinks }}
-      {{- if .Values.image.pullSecret }}
+      {{- if .Values.global.imagePullSecrets }}
       imagePullSecrets:
-        - name: {{ .Values.image.pullSecret }}
+        {{- toYaml .Values.global.imagePullSecrets | nindent 8 }}
       {{- end }}
+      securityContext:
+        {{- toYaml .Values.pod.securityContext | nindent 8 }}
+      terminationGracePeriodSeconds: {{ .Values.pod.terminationGracePeriodSeconds }}
+      dnsConfig:
+        {{- toYaml .Values.pod.dnsConfig | nindent 8 }}
+      dnsPolicy: {{ .Values.pod.dnsPolicy }}
+      restartPolicy: {{ .Values.pod.restartPolicy }}
+      hostNetwork: {{ .Values.pod.hostNetwork }}
+      hostPID: {{ .Values.pod.hostPID }}
+      hostIPC: {{ .Values.pod.hostIPC }}
       containers:
-        - name: {{ .Release.Name }}
-          image: {{ .Values.image.registry }}/{{ .Values.image.app }}/{{ .Values.image.service }}:{{ .Values.image.tag }}
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.global.imageRegistry }}/{{ .Values.container.image.repository }}/{{ .Values.app.name }}:{{ .Values.container.image.tag }}"
+          imagePullPolicy: {{ .Values.container.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.container.securityContext | nindent 12 }}
           resources:
-            limits:
-              cpu: {{ .Values.resources.limits.cpu }}
-              memory: {{ .Values.resources.limits.memory }}
-            requests:
-              cpu: {{ .Values.resources.requests.cpu }}
-              memory: {{ .Values.resources.requests.memory }}
+            {{- toYaml .Values.container.resources | nindent 12 }}
           ports:
             - name: http
-              containerPort: {{ .Values.container.port }}
+              containerPort: {{ .Values.app.port }}
+              protocol: TCP
+            {{- if .Values.metrics.enabled }}
+            - name: metrics
+              containerPort: {{ .Values.metrics.port }}
+              protocol: TCP
+            {{- end }}
+          {{- if .Values.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.livenessProbe.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.readinessProbe.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.startupProbe.enabled }}
+          startupProbe:
+            httpGet:
+              path: {{ .Values.startupProbe.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.startupProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.startupProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.startupProbe.successThreshold }}
+            failureThreshold: {{ .Values.startupProbe.failureThreshold }}
+          {{- end }}
+          volumeMounts:
+            - name: config-volume
+              mountPath: {{ .Values.app.configPath }}
+              readOnly: true
           env:
-            - name: HOST
-              value: {{ .Values.host }}
-            - name: ENV
-              value: {{ .Values.environment }}
-            # Add environment variables if any
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            {{- if .Values.logging.enabled }}
+            - name: LOG_FORMAT
+              value: {{ .Values.logging.format }}
+            - name: LOG_LEVEL
+              value: {{ .Values.logging.level }}
+            - name: LOG_OUTPUT
+              value: {{ .Values.logging.output }}
+            {{- if .Values.logging.aggregation.enabled }}
+            - name: LOG_AGGREGATION_TYPE
+              value: {{ .Values.logging.aggregation.type }}
+            - name: LOG_AGGREGATION_HOST
+              value: {{ .Values.logging.aggregation.config.host }}
+            - name: LOG_AGGREGATION_PORT
+              value: {{ .Values.logging.aggregation.config.port | quote }}
+            - name: LOG_AGGREGATION_INDEX
+              value: {{ include "service-deployment-helm-chart.logIndex" . }}
+            - name: LOG_FIELDS
+              value: {{ include "service-deployment-helm-chart.loggingFields" . | toJson }}
+            {{- end }}
+            {{- end }}
+            {{- if .Values.metrics.enabled }}
+            - name: METRICS_PORT
+              value: {{ .Values.metrics.port | quote }}
+            - name: METRICS_PATH
+              value: {{ .Values.metrics.path }}
+            {{- end }}
             {{- if .Values.envVars }}
-            {{- range $secret := .Values.envVars }}
-            - name: {{ $secret.name }}
-              value: {{ $secret.value | quote }}
+            {{- range $env := .Values.envVars }}
+            - name: {{ $env.name }}
+              value: {{ $env.value | quote }}
             {{- end }}
             {{- end }}
-            # Add secret environment variables if any
             {{- if .Values.secretEnvVars }}
             {{- range $secret := .Values.secretEnvVars }}
             - name: {{ $secret.name }}
@@ -57,3 +145,7 @@ spec:
                   key: {{ $secret.secretKey }}
             {{- end }}
             {{- end }}
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "service-deployment-helm-chart.fullname" . }}-config

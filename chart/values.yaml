@@ -1,23 +1,51 @@
-parent:
+# Global configuration
+global:
+  environment: dev
+  domain: file-convert.online
+  imageRegistry: 929572853995.dkr.ecr.eu-west-1.amazonaws.com
+  imagePullSecrets: []
+
+# Application configuration
+app:
+  name: example-service
+  version: v1
+  port: 8080
+  configPath: /app/config
+  configFile: config.yaml
+  logLevel: info
+  gracefulShutdown: 30s
+
+# Logging configuration
+logging:
+  enabled: true
+  format: json
+  level: info
+  output: stdout
+  aggregation:
+    enabled: true
+    type: elasticsearch
+    config:
+      host: elasticsearch-master
+      port: 9200
+  fields: {}
+
+# Metrics configuration
+metrics:
+  enabled: true
+  port: 9090
+  path: /metrics
+  interval: 15s
+  scrapeTimeout: 10s
+  labels: {}
+  annotations:
+    prometheus.io/scrape: "true"
+
+# Container configuration
+container:
   image:
-    registry: 929572853995.dkr.ecr.eu-west-1.amazonaws.com
-    app: file-convert/app
-    service: example-service
+    repository: file-convert/app
     tag: latest
     pullPolicy: Always
-  service:
-    port: 80
-    type: ClusterIP
-  deployment:
-    replicas: 1
-  container:
-    port: 8080
-    host: 127.0.0.1
-  ingress:
-    path: /api/example
-    stripPrefix: true
-  host: file-convert.online
-  enableServiceLinks: false
   resources:
     limits:
       cpu: 500m
@@ -25,19 +53,176 @@ parent:
     requests:
       cpu: 100m
       memory: 128Mi
-  envVars:
-    - name: ENV
-      value: dev
-    - name: HOST
-      value: file-convert.online
-    - name: APP_PORT
-      value: 8080
-    - name: EMAIL_SERVICE_URL
-      value: http://email-service/send-email
-  secretEnvVars:
-    - name: DB_URI
-      secretName: fc-example-dev-db-pguser-example-user
-      secretKey: uri
-    - name: JWT_SECRET
-      secretName: fc-example-dev-jwt-secret
-      secretKey: secret
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+
+# Pod configuration
+pod:
+  securityContext:
+    fsGroup: 1000
+  terminationGracePeriodSeconds: 60
+  dnsConfig:
+    options:
+      - name: ndots
+        value: "2"
+  dnsPolicy: ClusterFirst
+  restartPolicy: Always
+  hostNetwork: false
+  hostPID: false
+  hostIPC: false
+
+# Deployment configuration
+deployment:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+  annotations: {}
+
+# Ingress configuration
+ingress:
+  enabled: true
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - match: Host(`file-convert.online`) && PathPrefix(`/api/example`)
+      kind: Rule
+      services:
+        - name: example-service
+          port: 80
+      middlewares:
+        - name: example-service-strip-prefix
+  tls:
+    enabled: true
+    secretName: file-convert-tls
+  middlewares:
+    stripPrefix:
+      enabled: true
+      prefixes:
+        - /api/example
+      forceSlash: false
+
+# Liveness probe configuration
+livenessProbe:
+  enabled: true
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 3
+  path: /health/live
+
+# Readiness probe configuration
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 3
+  path: /health/ready
+
+# Startup probe configuration
+startupProbe:
+  enabled: true
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 30
+  path: /health/startup
+
+# Horizontal Pod Autoscaler configuration
+hpa:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+    scaleUp:
+      stabilizationWindowSeconds: 60
+
+# Pod Disruption Budget configuration
+pdb:
+  enabled: true
+  minAvailable: 1
+
+# Network Policy configuration
+networkPolicy:
+  enabled: true
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+        - podSelector:
+            matchLabels:
+              app: api-gateway
+
+# Environment variables
+envVars:
+  - name: ENV
+    value: dev
+  - name: HOST
+    value: file-convert.online
+  - name: APP_PORT
+    value: "8080"
+  - name: CONFIG_PATH
+    value: /app/config
+  - name: CONFIG_FILE
+    value: config.yaml
+  - name: LOG_LEVEL
+    value: info
+  - name: GRACEFUL_SHUTDOWN
+    value: 30s
+
+# Secret environment variables
+secretEnvVars:
+  - name: DB_URI
+    secretName: fc-example-dev-db-pguser-example-user
+    secretKey: uri
+  - name: JWT_SECRET
+    secretName: fc-example-dev-jwt-secret
+    secretKey: secret
+
+# ConfigMap configuration
+configMap:
+  enabled: true
+  data:
+    config.yaml: |
+      app:
+        name: example-service
+        port: 8080
+        logLevel: info
+      database:
+        uri: ${DB_URI}
+      kafka:
+        brokers:
+          - kafka:9092
+        clientId: example-service
+        groupId: example-group
+      redis:
+        addr: redis:6379
+        db: 0
