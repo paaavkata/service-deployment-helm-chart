@@ -2,9 +2,20 @@ apiVersion: v2
 name: service-deployment-helm-chart
 description: Mother Helm chart that will be used as a template to deploy all services
 type: application
-version: 1.0.0
-sources:
-  - https://github.com/paaavkata/service-deployment-helm-chart
+version: 0.1.0
+appVersion: "1.0.0"
 maintainers:
-  - name: Pavel Damyanov
-    url: https://github.com/paaavkata
+  - name: FileConvert Team
+    email: team@file-convert.online
+keywords:
+  - file-convert
+  - microservice
+  - kubernetes
+  - helm
+home: https://file-convert.online
+sources:
+  - https://github.com/file-convert/backend_apps
+kubeVersion: ">=1.21.0"
+annotations:
+  category: Infrastructure
+  licenses: Apache-2.0

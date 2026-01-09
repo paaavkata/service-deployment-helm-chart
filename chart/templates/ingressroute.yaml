@@ -1,0 +1,31 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ include "service-deployment-helm-chart.fullname" . }}
+  labels:
+    {{- include "service-deployment-helm-chart.labels" . | nindent 4 }}
+spec:
+  entryPoints:
+    {{- toYaml .Values.ingress.entryPoints | nindent 4 }}
+  routes:
+    {{- toYaml .Values.ingress.routes | nindent 4 }}
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    secretName: {{ .Values.ingress.tls.secretName }}
+  {{- end }}
+{{- if and .Values.ingress.middlewares.stripPrefix.enabled .Values.ingress.middlewares.stripPrefix.prefixes }}
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ include "service-deployment-helm-chart.fullname" . }}-strip-prefix
+  labels:
+    {{- include "service-deployment-helm-chart.labels" . | nindent 4 }}
+spec:
+  stripPrefix:
+    prefixes:
+      {{- toYaml .Values.ingress.middlewares.stripPrefix.prefixes | nindent 6 }}
+    forceSlash: {{ .Values.ingress.middlewares.stripPrefix.forceSlash }}
+{{- end }}
+{{- end }} 
