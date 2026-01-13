@@ -25,6 +25,7 @@ spec:
         - name: {{ .Release.Name }}
           image: {{ .Values.image.registry }}/{{ .Values.image.app }}/{{ .Values.image.service }}:{{ .Values.image.tag }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.resources }}
           resources:
             limits:
               cpu: {{ .Values.resources.limits.cpu }}
@@ -32,9 +33,12 @@ spec:
             requests:
               cpu: {{ .Values.resources.requests.cpu }}
               memory: {{ .Values.resources.requests.memory }}
+          {{- end }}
+          {{- if .Values.ingress.enabled }}
           ports:
             - name: http
               containerPort: {{ .Values.container.port }}
+          {{- end }}
           env:
             - name: HOST
               value: {{ .Values.host }}
@@ -42,9 +46,9 @@ spec:
               value: {{ .Values.environment }}
             # Add environment variables if any
             {{- if .Values.envVars }}
-            {{- range $secret := .Values.envVars }}
-            - name: {{ $secret.name }}
-              value: {{ $secret.value | quote }}
+            {{- range $env := .Values.envVars }}
+            - name: {{ $env.name }}
+              value: {{ $env.value | quote }}
             {{- end }}
             {{- end }}
             # Add secret environment variables if any
