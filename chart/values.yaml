@@ -59,11 +59,3 @@ envVars:
     value: 8080
   - name: EMAIL_SERVICE_URL
     value: http://email-service/send-email
-
-secretEnvVars:
-  - name: DB_URI
-    secretName: fc-example-dev-db-pguser-example-user
-    secretKey: uri
-  - name: JWT_SECRET
-    secretName: fc-example-dev-jwt-secret
-    secretKey: secret
