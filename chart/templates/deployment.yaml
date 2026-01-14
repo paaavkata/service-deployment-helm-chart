@@ -16,7 +16,12 @@ spec:
         app: {{ .Release.Name }}
         version: v1
     spec:
-      enableServiceLinks: {{ .Values.enableServiceLinks }}
+      enableServiceLinks: {{ default false .Values.enableServiceLinks }}
+      {{- if .Values.serviceAccountName }}
+      serviceAccountName: {{ .Values.serviceAccountName }}
+      {{- else if .Values.serviceAccount.create }}
+      serviceAccountName: {{ .Release.Name }}
+      {{- end }}
       {{- if .Values.image.pullSecret }}
       imagePullSecrets:
         - name: {{ .Values.image.pullSecret }}
@@ -39,16 +44,26 @@ spec:
             - name: http
               containerPort: {{ .Values.container.port }}
           {{- end }}
+          {{- if .Values.volumeMounts }}
+          volumeMounts:
+            {{- toYaml .Values.volumeMounts | nindent 12 }}
+          {{- end }}
           env:
             - name: HOST
-              value: {{ .Values.host }}
+              value: {{ default "" .Values.host | quote }}
             - name: ENV
-              value: {{ .Values.environment }}
+              value: {{ default "" .Values.environment | quote }}
             # Add environment variables if any
             {{- if .Values.envVars }}
             {{- range $env := .Values.envVars }}
+            {{- if $env.valueFrom }}
+            - name: {{ $env.name }}
+              valueFrom:
+                {{- toYaml $env.valueFrom | nindent 16 }}
+            {{- else }}
             - name: {{ $env.name }}
               value: {{ $env.value | quote }}
+            {{- end }}
             {{- end }}
             {{- end }}
             # Add secret environment variables if any
@@ -61,3 +76,7 @@ spec:
                   key: {{ $secret.secretKey }}
             {{- end }}
             {{- end }}
+      {{- if .Values.volumes }}
+      volumes:
+        {{- toYaml .Values.volumes | nindent 8 }}
+      {{- end }}

@@ -31,7 +31,7 @@ fi
 
 CHART_VERSION="${MAJOR}.${MINOR}.${PATCH}"
 
-CHART_VERSION="0.1.1"
+# CHART_VERSION="0.1.1"
 
 # # === Build and push Helm chart ===
 helm dependency update ${HELM_CHART_DIR}

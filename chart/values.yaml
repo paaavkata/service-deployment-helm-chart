@@ -1,44 +1,69 @@
-parent:
-  image:
-    registry: 929572853995.dkr.ecr.eu-west-1.amazonaws.com
-    app: file-convert/app
-    service: example-service
-    tag: latest
-    pullPolicy: Always
-  service:
-    port: 80
-    type: ClusterIP
-  deployment:
-    replicas: 1
-  container:
-    port: 8080
-    host: 127.0.0.1
-  ingress:
-    enabled: true
-    path: /api/example
-    stripPrefix: true
-  host: file-convert.online
-  enableServiceLinks: false
-  resources:
-    limits:
-      cpu: 100m
-      memory: 100Mi
-    requests:
-      cpu: 10m
-      memory: 50Mi
-  envVars:
-    - name: ENV
-      value: dev
-    - name: HOST
-      value: file-convert.online
-    - name: APP_PORT
-      value: 8080
-    - name: EMAIL_SERVICE_URL
-      value: http://email-service/send-email
-  secretEnvVars:
-    - name: DB_URI
-      secretName: fc-example-dev-db-pguser-example-user
-      secretKey: uri
-    - name: JWT_SECRET
-      secretName: fc-example-dev-jwt-secret
-      secretKey: secret
+## Top-level values.
+##
+## When used as a dependency with alias `parent`, the parent chart should set:
+## parent:
+##   image: ...
+##   service: ...
+##   deployment: ...
+##   ...
+
+environment: dev
+host: file-convert.online
+enableServiceLinks: false
+
+image:
+  registry: 929572853995.dkr.ecr.eu-west-1.amazonaws.com
+  app: file-convert/app
+  service: example-service
+  tag: latest
+  pullPolicy: Always
+  pullSecret: ""
+
+serviceAccount:
+  create: false
+  namespace: ""
+
+# If set, the Deployment will reference this existing ServiceAccount (e.g. created by a separate RBAC chart)
+serviceAccountName: ""
+
+service:
+  port: 80
+  type: ClusterIP
+
+deployment:
+  replicas: 1
+
+container:
+  port: 8080
+  host: 127.0.0.1
+
+ingress:
+  enabled: true
+  path: /api/example
+  stripPrefix: true
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 100Mi
+  requests:
+    cpu: 10m
+    memory: 50Mi
+
+envVars:
+  - name: ENV
+    value: dev
+  - name: HOST
+    value: file-convert.online
+  - name: APP_PORT
+    value: 8080
+  - name: EMAIL_SERVICE_URL
+    value: http://email-service/send-email
+
+secretEnvVars:
+  - name: DB_URI
+    secretName: fc-example-dev-db-pguser-example-user
+    secretKey: uri
+  - name: JWT_SECRET
+    secretName: fc-example-dev-jwt-secret
+    secretKey: secret
