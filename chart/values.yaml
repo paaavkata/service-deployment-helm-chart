@@ -43,6 +43,9 @@ ingress:
   stripPrefix: true
   mainHostRecord: true
   gatewayPluginEnabled: false
+  # Namespace of the traefik-gateway-plugin Middleware CRD.
+  # Leave empty to reference within the same namespace as the IngressRoute.
+  gatewayPluginNamespace: ""
 
 resources:
   limits:
