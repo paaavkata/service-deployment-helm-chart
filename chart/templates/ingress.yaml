@@ -7,6 +7,7 @@ spec:
   entryPoints:
     - web
   routes:
+    {{- if .Values.ingress.mainHostRecord }}
     - match: Host(`{{ .Values.host }}`) && PathPrefix(`{{ .Values.ingress.path }}`)
       {{- if .Values.ingress.stripPrefix }}
       middlewares:
@@ -17,6 +18,7 @@ spec:
         - kind: Service
           name: {{ .Release.Name }}
           port: {{ .Values.service.port }}
+    {{- end }}
     {{- if .Values.ingress.subdomains }}
     {{- $root := . }}
     {{- range $v := .Values.ingress.subdomains }}

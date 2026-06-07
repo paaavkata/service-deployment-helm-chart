@@ -41,6 +41,7 @@ ingress:
   enabled: true
   path: /api/example
   stripPrefix: true
+  mainHostRecord: true
 
 resources:
   limits:
