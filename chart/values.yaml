@@ -42,6 +42,7 @@ ingress:
   path: /api/example
   stripPrefix: true
   mainHostRecord: true
+  gatewayPluginEnabled: false
 
 resources:
   limits:
