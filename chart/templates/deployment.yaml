@@ -49,10 +49,24 @@ spec:
             {{- toYaml .Values.volumeMounts | nindent 12 }}
           {{- end }}
           env:
+            {{- $swaggerHost := .Values.host }}
+            {{- if eq .Values.environment "dev" }}
+            {{- $swaggerHost = printf "dev.%s" .Values.host }}
+            {{- end }}
+            {{- $swaggerSchemes := "http" }}
+            {{- if or (eq .Values.environment "dev") (eq .Values.environment "staging") }}
+            {{- $swaggerSchemes = "https" }}
+            {{- end }}
             - name: HOST
-              value: {{ default "" .Values.host | quote }}
+              value: {{ $swaggerHost | quote }}
             - name: ENV
               value: {{ default "" .Values.environment | quote }}
+            {{- if .Values.ingress.enabled }}
+            - name: SWAGGER_BASE_PATH
+              value: {{ default "" .Values.ingress.path | quote }}
+            - name: SWAGGER_SCHEMES
+              value: {{ $swaggerSchemes | quote }}
+            {{- end }}
             # Add environment variables if any
             {{- if .Values.envVars }}
             {{- range $env := .Values.envVars }}
