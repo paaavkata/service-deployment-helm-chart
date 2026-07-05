@@ -3,17 +3,19 @@
 ## Consumed as a subchart aliased `parent`; a service sets these under a
 ## `parent:` block in its own helm/values.yaml. Defaults below are subchart defaults.
 ##
-## HARDENING ROLLOUT: every new hardening feature (probes, securityContext,
-## PodDisruptionBudget, HPA, topologySpread, ServiceMonitor) is GATED behind an
-## `enabled` flag defaulting to false, so services opt in one at a time.
+## HARDENING DEFAULTS (1.3.0): probes and securityContext are ON by default —
+## every service serves /startupz /livez /readyz on the metrics port via
+## go-server, and the cluster enforces PodSecurity. A service that cannot
+## satisfy them yet opts OUT explicitly. PDB/HPA/topologySpread/ServiceMonitor
+## stay opt-in (they depend on replica count / env specifics).
 
 environment: dev
 host: file-convert.online
 enableServiceLinks: false
 
 image:
-  registry: 929572853995.dkr.ecr.eu-west-1.amazonaws.com
-  app: file-convert/app
+  registry: registry.internal.cloudfusion.tech
+  app: platform
   service: example-service
   tag: latest
   pullPolicy: Always
@@ -49,9 +51,9 @@ ingress:
   # Namespace of the traefik-gateway-plugin Middleware CRD (empty = same namespace).
   gatewayPluginNamespace: ""
 
-# --- probes (gated; flip on per-service after go-server wiring) ---
+# --- probes (default ON — go-server serves these on the metrics port) ---
 probes:
-  enabled: false
+  enabled: true
   port: metrics                  # named container port the probes target (9090)
   startup:
     path: /startupz
@@ -80,7 +82,7 @@ lifecycle:
 
 # --- securityContext (gated) ---
 securityContext:
-  enabled: false
+  enabled: true
   runAsNonRoot: true
   runAsUser: 10001
   fsGroup: 10001

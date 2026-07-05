@@ -22,3 +22,11 @@ Other defaults: `deployment.replicas: 2`; `resources` sets CPU+memory **requests
 `lifecycle.preStopMode: none` (drain in-process via go-server; use `nativeSleep` on k8s ≥1.30).
 Migrate a service by setting `probes.enabled`, `securityContext.enabled`, `serviceMonitor.enabled: true`
 in its `helm/values.yaml` under `parent:` (see `K8S_HARDENING_PLAN/03-per-service-plans.md`).
+
+## Version 1.3.0 — hardening on by default
+
+`probes.enabled` and `securityContext.enabled` now default **true** (all
+services serve the go-server health endpoints on `metrics`; the cluster
+enforces PodSecurity). Opt out per-service only if genuinely incompatible.
+Also: default `image.registry` is the internal zot registry (ECR retired).
+Published by chart-ci from this repo's main branch — do not push manually.
