@@ -1,84 +1,33 @@
 {{/*
-Expand the name of the chart.
+Common helpers for the shared service-deployment chart.
+Selector labels intentionally stay `app` + `version: v1` for backward
+compatibility — spec.selector.matchLabels is immutable on existing releases.
 */}}
-{{- define "service-deployment-helm-chart.name" -}}
-{{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
-{{- end }}
 
-{{/*
-Create a default fully qualified app name.
-We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
-If release name contains chart name it will be used as a full name.
-*/}}
-{{- define "service-deployment-helm-chart.fullname" -}}
-{{- if .Values.fullnameOverride }}
-{{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
-{{- else }}
-{{- $name := default .Chart.Name .Values.nameOverride }}
-{{- if contains $name .Release.Name }}
-{{- .Release.Name | trunc 63 | trimSuffix "-" }}
-{{- else }}
-{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" }}
-{{- end }}
-{{- end }}
-{{- end }}
+{{- define "service-deployment.name" -}}
+{{- .Release.Name -}}
+{{- end -}}
 
-{{/*
-Create chart name and version as used by the chart label.
-*/}}
-{{- define "service-deployment-helm-chart.chart" -}}
-{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
-{{- end }}
+{{/* Immutable selector labels — DO NOT change on existing releases. */}}
+{{- define "service-deployment.selectorLabels" -}}
+app: {{ .Release.Name }}
+version: v1
+{{- end -}}
 
-{{/*
-Common labels
-*/}}
-{{- define "service-deployment-helm-chart.labels" -}}
-helm.sh/chart: {{ include "service-deployment-helm-chart.chart" . }}
-{{ include "service-deployment-helm-chart.selectorLabels" . }}
-{{- if .Chart.AppVersion }}
-app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
-{{- end }}
-app.kubernetes.io/managed-by: {{ .Release.Service }}
-{{- end }}
-
-{{/*
-Selector labels
-*/}}
-{{- define "service-deployment-helm-chart.selectorLabels" -}}
+{{/* Recommended metadata labels (safe to change). */}}
+{{- define "service-deployment.labels" -}}
 app.kubernetes.io/name: {{ .Release.Name }}
-app.kubernetes.io/app: {{ .Values.global.appName }} 
-{{- end }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/version: {{ .Values.image.tag | quote }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+kubernetes.infra.app: {{ .Release.Name }}
+{{- end -}}
 
 {{/*
-Common logging fields
+Platform attribution label (SERVICEMONITOR.md §4): stable across envs,
+propagated to Prometheus (kube-state-metrics allowlist) and Loki (Promtail
+relabels the pod label). RFC1123 value; defaults to the release name.
 */}}
-{{- define "service-deployment-helm-chart.loggingFields" -}}
-app: {{ .Values.app.name }}
-environment: {{ .Values.global.environment }}
-version: {{ .Values.app.version }}
-{{- end }}
-
-{{/*
-Log aggregation index name
-*/}}
-{{- define "service-deployment-helm-chart.logIndex" -}}
-app-logs-{{ .Values.global.environment }}
-{{- end }}
-
-{{/*
-Common metrics labels
-*/}}
-{{- define "service-deployment-helm-chart.metricsLabels" -}}
-app: {{ .Values.app.name }}
-environment: {{ .Values.global.environment }}
-{{- end }}
-
-{{/*
-Common metrics annotations
-*/}}
-{{- define "service-deployment-helm-chart.metricsAnnotations" -}}
-prometheus.io/scrape: "true"
-prometheus.io/port: {{ .Values.metrics.port | quote }}
-prometheus.io/path: {{ .Values.metrics.path | quote }}
-{{- end }} 
+{{- define "service-deployment.appId" -}}
+{{- .Values.appId | default .Release.Name -}}
+{{- end -}}

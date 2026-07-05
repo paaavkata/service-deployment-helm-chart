@@ -1,13 +1,13 @@
-{{- if .Values.pdb.enabled }}
+{{- if .Values.podDisruptionBudget.enabled }}
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: {{ include "service-deployment-helm-chart.fullname" . }}
+  name: {{ .Release.Name }}
   labels:
-    {{- include "service-deployment-helm-chart.labels" . | nindent 4 }}
+    {{- include "service-deployment.labels" . | nindent 4 }}
 spec:
-  minAvailable: {{ .Values.pdb.minAvailable }}
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
   selector:
     matchLabels:
-      {{- include "service-deployment-helm-chart.selectorLabels" . | nindent 6 }}
-{{- end }} 
+      {{- include "service-deployment.selectorLabels" . | nindent 6 }}
+{{- end }}

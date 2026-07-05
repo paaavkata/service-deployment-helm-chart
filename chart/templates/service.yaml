@@ -1,29 +1,22 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "service-deployment-helm-chart.fullname" . }}
+  name: {{ .Release.Name }}
   labels:
-    {{- include "service-deployment-helm-chart.labels" . | nindent 4 }}
-  {{- with .Values.service.annotations }}
-  annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
-  {{- if .Values.metrics.enabled }}
-  annotations:
-    {{- include "service-deployment-helm-chart.metricsAnnotations" . | nindent 4 }}
-  {{- end }}
-spec:
-  type: {{ .Values.service.type }}
-  ports:
-    - port: {{ .Values.service.port }}
-      targetPort: {{ .Values.service.targetPort }}
-      protocol: TCP
-      name: http
-    {{- if .Values.metrics.enabled }}
-    - port: {{ .Values.metrics.port }}
-      targetPort: {{ .Values.metrics.port }}
-      protocol: TCP
-      name: metrics
+    {{- include "service-deployment.labels" . | nindent 4 }}
+    {{- include "service-deployment.selectorLabels" . | nindent 4 }}
+    app_id: {{ include "service-deployment.appId" . }}
+    {{- if .Values.serviceMonitor.enabled }}
+    monitoring: "true"
     {{- end }}
+spec:
   selector:
-    {{- include "service-deployment-helm-chart.selectorLabels" . | nindent 4 }}
+    {{- include "service-deployment.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: http
+    - name: metrics
+      port: {{ .Values.container.metricsPort }}
+      targetPort: metrics
+  type: {{ .Values.service.type }}

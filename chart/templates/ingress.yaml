@@ -1,0 +1,58 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ .Release.Name }}
+spec:
+  entryPoints:
+    - web
+  routes:
+    {{- if .Values.ingress.mainHostRecord }}
+    - match: Host(`{{ .Values.host }}`) && PathPrefix(`{{ .Values.ingress.path }}`)
+      kind: Rule
+      {{- if or .Values.ingress.stripPrefix .Values.ingress.gatewayPluginEnabled }}
+      middlewares:
+      {{- if .Values.ingress.gatewayPluginEnabled }}
+      - name: traefik-gateway-plugin
+        {{- if .Values.ingress.gatewayPluginNamespace }}
+        namespace: {{ .Values.ingress.gatewayPluginNamespace }}
+        {{- end }}
+      {{- end }}
+      {{- if .Values.ingress.stripPrefix }}
+      - name: {{ .Release.Name }}
+      {{- end }}
+      {{- end }}
+      services:
+        - kind: Service
+          name: {{ .Release.Name }}
+          port: {{ .Values.service.port }}
+    {{- end }}
+    {{- if .Values.ingress.subdomains }}
+    {{- $root := . }}
+    {{- range $v := .Values.ingress.subdomains }}
+    - match: Host(`{{ $v }}.{{ $root.Values.host }}`) && PathPrefix(`/`)
+      kind: Rule
+      {{- if $root.Values.ingress.gatewayPluginEnabled }}
+      middlewares:
+      - name: traefik-gateway-plugin
+        {{- if $root.Values.ingress.gatewayPluginNamespace }}
+        namespace: {{ $root.Values.ingress.gatewayPluginNamespace }}
+        {{- end }}
+      {{- end }}
+      services:
+        - name: {{ $root.Release.Name }}
+          port: {{ $root.Values.service.port }}
+    {{- end }}
+    {{- end }}
+{{- if .Values.ingress.stripPrefix }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ .Release.Name }}
+spec:
+  stripPrefix:
+    prefixes:
+      - {{ .Values.ingress.path }}
+{{- end }}
+{{- end }}

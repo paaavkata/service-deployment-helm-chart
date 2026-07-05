@@ -14,7 +14,7 @@ TAG=$(git rev-parse --short HEAD --)
 HELM_CHART_DIR=chart
 REGISTRY_ID=$(aws ecr describe-registry --output text --query 'registryId' --region $AWS_REGION)
 REGISTRY="${REGISTRY_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
-CHART_REPO=infra
+CHART_REPO=file-convert/app
 CHART_TARGET_DIR="${HELM_CHART_DIR}/target"
 
 CURRENT_VERSION=$(cat $CURRENT_VERSION_FILE_NAME)
@@ -31,7 +31,7 @@ fi
 
 CHART_VERSION="${MAJOR}.${MINOR}.${PATCH}"
 
-CHART_VERSION="0.1.1"
+# CHART_VERSION="0.1.1"
 
 # # === Build and push Helm chart ===
 helm dependency update ${HELM_CHART_DIR}
