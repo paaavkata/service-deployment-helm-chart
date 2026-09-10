@@ -113,6 +113,11 @@ autoscaling:
   targetCPUUtilizationPercentage: 75
   targetMemoryUtilizationPercentage: 80
 
+# --- tolerations passthrough (e.g. fast failover off dead nodes:
+# node.kubernetes.io/unreachable + not-ready, NoExecute, tolerationSeconds 60
+# — setting these REPLACES the k8s-injected 300s defaults) ---
+tolerations: []
+
 # --- topology spread (gated) ---
 topologySpread:
   enabled: false
