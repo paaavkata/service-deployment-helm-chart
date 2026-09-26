@@ -14,7 +14,7 @@ host: file-convert.online
 enableServiceLinks: false
 
 image:
-  registry: registry.internal.cloudfusion.tech
+  registry: registry.internal.stacktixs.com
   app: platform
   service: example-service
   tag: latest
