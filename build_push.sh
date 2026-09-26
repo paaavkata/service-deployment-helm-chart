@@ -1,4 +1,11 @@
 #! /bin/bash
+#
+# DEPRECATED: do not use. This script still pushes to the retired AWS ECR.
+# The authoritative chart build/push pipeline is the Argo Workflows template
+# infra/infra-gitops/argo-workflows/ci/chart-ci.yaml, which publishes to Zot.
+echo "ERROR: build_push.sh is deprecated and pushes to the retired AWS ECR." >&2
+echo "       Use infra/infra-gitops/argo-workflows/ci/chart-ci.yaml (Zot) instead." >&2
+exit 1
 
 # Check for input arguments for the minor version
 INCREMENT_MINOR_VERSION=false
