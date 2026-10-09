@@ -1,7 +1,7 @@
 # service-deployment-helm-chart
 Helm chart that will be used as a template for all services that run in K8S.
 
-**Current chart version: 1.3.1** (`chart/Chart.yaml`). Most consuming services still pin the
+**Current chart version: 1.4.0** (`chart/Chart.yaml`). Most consuming services still pin the
 parent chart at `1.2.0` in their own `helm/Chart.yaml` dependency block — that is a deliberate,
 unbumped pin, not a doc error; don't "fix" a service's pin without checking with its owner first.
 
@@ -31,6 +31,25 @@ Other defaults: `deployment.replicas: 2`; `resources` sets CPU+memory **requests
 `lifecycle.preStopMode: none` (drain in-process via go-server; use `nativeSleep` on k8s ≥1.30).
 Migrate a service by setting `probes.enabled`, `securityContext.enabled`, `serviceMonitor.enabled: true`
 in its `helm/values.yaml` under `parent:` (see `K8S_HARDENING_PLAN/03-per-service-plans.md`).
+
+## Version 1.4.0 — availability on by default
+
+`podDisruptionBudget.enabled` and `topologySpread.enabled` are now tri-state
+`auto | true | false`, default **`auto`**: rendered whenever the workload has
+>= 2 replicas (`deployment.replicas`, or `autoscaling.minReplicas` with HPA on),
+never for a singleton (a `minAvailable: 1` PDB on one replica blocks drains and
+the descheduler). `tolerations` now defaults to the 60s fast-failover pair
+(`node.kubernetes.io/unreachable` + `not-ready`, NoExecute); a service-supplied
+list replaces it, an explicit `[]` restores the k8s 300s defaults.
+
+| Flag | Default | Effect |
+|---|---|---|
+| `podDisruptionBudget.enabled` | `auto` | PDB `minAvailable: 1` when replicas >= 2 |
+| `topologySpread.enabled` | `auto` | hostname spread, `maxSkew: 1`, `ScheduleAnyway`, when replicas >= 2 |
+| `tolerations` | 60s unreachable/not-ready pair | fast eviction off dead nodes |
+
+Render matrix: `chart/tests/render-cases.sh` (run before bumping the chart).
+Existing explicit `true`/`false` values keep their meaning.
 
 ## Version 1.3.0 — hardening on by default
 

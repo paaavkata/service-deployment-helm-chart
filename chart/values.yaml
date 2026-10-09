@@ -6,8 +6,13 @@
 ## HARDENING DEFAULTS (1.3.0): probes and securityContext are ON by default —
 ## every service serves /startupz /livez /readyz on the metrics port via
 ## go-server, and the cluster enforces PodSecurity. A service that cannot
-## satisfy them yet opts OUT explicitly. PDB/HPA/topologySpread/ServiceMonitor
-## stay opt-in (they depend on replica count / env specifics).
+## satisfy them yet opts OUT explicitly.
+##
+## AVAILABILITY DEFAULTS (1.4.0): podDisruptionBudget and topologySpread are
+## `auto` — rendered whenever the workload has >= 2 replicas (deployment.replicas,
+## or autoscaling.minReplicas when HPA is on), suppressed at 1 replica so a
+## singleton never blocks drains. Tolerations default to the 60s fast-failover
+## pair. HPA/ServiceMonitor stay opt-in.
 
 environment: dev
 host: file-convert.online
@@ -100,9 +105,12 @@ resources:
   limits:
     memory: 128Mi                # cpu intentionally omitted
 
-# --- PodDisruptionBudget (gated; meaningful only with replicas >= 2) ---
+# --- PodDisruptionBudget: auto | true | false ---
+#   auto  -> rendered when replicas >= 2 (never for a singleton: a minAvailable: 1
+#            PDB on 1 replica blocks node drains and the descheduler forever)
+#   true  -> always rendered; false -> never
 podDisruptionBudget:
-  enabled: false
+  enabled: auto
   minAvailable: 1
 
 # --- HorizontalPodAutoscaler (gated). When enabled, the Deployment omits replicas. ---
@@ -113,14 +121,23 @@ autoscaling:
   targetCPUUtilizationPercentage: 75
   targetMemoryUtilizationPercentage: 80
 
-# --- tolerations passthrough (e.g. fast failover off dead nodes:
-# node.kubernetes.io/unreachable + not-ready, NoExecute, tolerationSeconds 60
-# — setting these REPLACES the k8s-injected 300s defaults) ---
-tolerations: []
+# --- tolerations: fast failover off dead nodes (default). Pods leave an
+# unreachable / not-ready node after 60s instead of the k8s-injected 300s.
+# A service-supplied list REPLACES this one; an explicit empty list `[]`
+# restores the k8s 300s defaults. ---
+tolerations:
+  - key: node.kubernetes.io/unreachable
+    operator: Exists
+    effect: NoExecute
+    tolerationSeconds: 60
+  - key: node.kubernetes.io/not-ready
+    operator: Exists
+    effect: NoExecute
+    tolerationSeconds: 60
 
-# --- topology spread (gated) ---
+# --- topology spread: auto | true | false (auto = when replicas >= 2) ---
 topologySpread:
-  enabled: false
+  enabled: auto
   maxSkew: 1
   topologyKey: kubernetes.io/hostname
   whenUnsatisfiable: ScheduleAnyway

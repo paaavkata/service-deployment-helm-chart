@@ -31,3 +31,27 @@ relabels the pod label). RFC1123 value; defaults to the release name.
 {{- define "service-deployment.appId" -}}
 {{- .Values.appId | default .Release.Name -}}
 {{- end -}}
+
+{{/*
+multiReplica: "true" when the workload runs >= 2 replicas (deployment.replicas,
+or autoscaling.minReplicas when the HPA owns the replica count), else "".
+*/}}
+{{- define "service-deployment.multiReplica" -}}
+{{- if .Values.autoscaling.enabled -}}
+{{- if ge (int .Values.autoscaling.minReplicas) 2 }}true{{ end -}}
+{{- else -}}
+{{- if ge (int .Values.deployment.replicas) 2 }}true{{ end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+gate: tri-state enabled flag -> "true" or "".
+  true  -> always; false -> never; auto -> only when multiReplica.
+usage: include "service-deployment.gate" (dict "enabled" .Values.x.enabled "root" $)
+*/}}
+{{- define "service-deployment.gate" -}}
+{{- $e := toString .enabled -}}
+{{- if eq $e "true" -}}true
+{{- else if and (eq $e "auto") (include "service-deployment.multiReplica" .root) -}}true
+{{- end -}}
+{{- end -}}

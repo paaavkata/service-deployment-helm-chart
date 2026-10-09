@@ -1,4 +1,4 @@
-{{- if .Values.podDisruptionBudget.enabled }}
+{{- if include "service-deployment.gate" (dict "enabled" .Values.podDisruptionBudget.enabled "root" $) }}
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
