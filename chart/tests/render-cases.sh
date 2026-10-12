@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Render-matrix check for the availability defaults (1.4.0): PDB / topologySpread
-# auto-gate on replica count, tolerations default to the 60s fast-failover pair.
+# auto-gate on replica count, tolerations default to the 60s fast-failover pair;
+# and the priorityClassName auto rendering (1.5.0).
 # Usage: chart/tests/render-cases.sh   (needs helm on PATH; exits non-zero on drift)
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -21,4 +22,9 @@ check "default tolerations: two 60s entries"       2 'tolerationSeconds: 60'
 check "custom tolerations replace default"         0 'tolerationSeconds: 60' --set 'tolerations[0].key=workload,tolerations[0].operator=Exists'
 check "custom tolerations rendered"                1 'key: workload' --set 'tolerations[0].key=workload,tolerations[0].operator=Exists'
 check "empty tolerations list -> k8s defaults"     0 'tolerationSeconds' --set 'tolerations=[]'
+check "priorityClassName auto+dev -> services-dev"   1 'priorityClassName: services-dev'
+check "priorityClassName auto+prod -> services-prod" 1 'priorityClassName: services-prod' --set environment=prod
+check "priorityClassName auto+other -> none"         0 'priorityClassName' --set environment=staging
+check "priorityClassName literal"                    1 'priorityClassName: jobs-dev' --set priorityClassName=jobs-dev
+check "priorityClassName empty -> none"              0 'priorityClassName' --set priorityClassName=""
 exit $fail

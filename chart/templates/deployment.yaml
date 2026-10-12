@@ -19,6 +19,9 @@ spec:
     spec:
       enableServiceLinks: {{ default false .Values.enableServiceLinks }}
       terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      {{- with include "service-deployment.priorityClassName" . }}
+      priorityClassName: {{ . }}
+      {{- end }}
       {{- if .Values.serviceAccountName }}
       serviceAccountName: {{ .Values.serviceAccountName }}
       {{- else if .Values.serviceAccount.create }}

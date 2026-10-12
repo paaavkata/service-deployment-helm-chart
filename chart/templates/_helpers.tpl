@@ -55,3 +55,14 @@ usage: include "service-deployment.gate" (dict "enabled" .Values.x.enabled "root
 {{- else if and (eq $e "auto") (include "service-deployment.multiReplica" .root) -}}true
 {{- end -}}
 {{- end -}}
+
+{{/*
+priorityClassName: "auto" -> services-<environment> for prod/dev, nothing for
+other environments; a literal string renders as given; "" renders nothing.
+*/}}
+{{- define "service-deployment.priorityClassName" -}}
+{{- $p := toString (default "" .Values.priorityClassName) -}}
+{{- if eq $p "auto" -}}
+{{- if has .Values.environment (list "prod" "dev") -}}services-{{ .Values.environment }}{{- end -}}
+{{- else -}}{{ $p }}{{- end -}}
+{{- end -}}

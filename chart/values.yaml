@@ -47,6 +47,12 @@ service:
 deployment:
   replicas: 2
 
+# PriorityClass (1.5.0): `auto` renders `services-<environment>` for prod/dev
+# (classes live in infra-gitops infra/priority-classes/services.yaml: prod
+# preempts dev on the shared services pool, dev never preempts). A literal
+# string is rendered as given; "" renders no priorityClassName.
+priorityClassName: auto
+
 ingress:
   enabled: true
   path: /api/example

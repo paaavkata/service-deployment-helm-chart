@@ -1,7 +1,7 @@
 # service-deployment-helm-chart
 Helm chart that will be used as a template for all services that run in K8S.
 
-**Current chart version: 1.4.0** (`chart/Chart.yaml`). Most consuming services still pin the
+**Current chart version: 1.5.0** (`chart/Chart.yaml`). Most consuming services still pin the
 parent chart at `1.2.0` in their own `helm/Chart.yaml` dependency block — that is a deliberate,
 unbumped pin, not a doc error; don't "fix" a service's pin without checking with its owner first.
 
@@ -31,6 +31,18 @@ Other defaults: `deployment.replicas: 2`; `resources` sets CPU+memory **requests
 `lifecycle.preStopMode: none` (drain in-process via go-server; use `nativeSleep` on k8s ≥1.30).
 Migrate a service by setting `probes.enabled`, `securityContext.enabled`, `serviceMonitor.enabled: true`
 in its `helm/values.yaml` under `parent:` (see `K8S_HARDENING_PLAN/03-per-service-plans.md`).
+
+## Version 1.5.0 — priorityClassName from environment
+
+`priorityClassName` defaults to `auto`: the Deployment renders `services-prod` for
+`environment: prod` and `services-dev` for `dev` (PriorityClasses from infra-gitops
+`infra/priority-classes/services.yaml`; prod preempts dev on the shared services pool,
+dev never preempts). Any other environment renders nothing. A literal value is rendered
+as given; `""` disables it.
+
+| Value | Default | Effect |
+|---|---|---|
+| `priorityClassName` | `auto` | `services-<environment>` for prod/dev, literal otherwise, `""` = none |
 
 ## Version 1.4.0 — availability on by default
 
