@@ -27,6 +27,29 @@ spec:
           name: {{ .Release.Name }}
           port: {{ .Values.service.port }}
     {{- end }}
+    {{- /* Additional application hosts (gateway-app-onboarding): same path, entrypoints
+         and middleware chain as the primary host, so one platform service serves
+         several applications; the gateway derives X-App-Id from the host. */}}
+    {{- range $h := .Values.ingress.extraHosts }}
+    - match: Host(`{{ $h }}`) && PathPrefix(`{{ $.Values.ingress.path }}`)
+      kind: Rule
+      {{- if or $.Values.ingress.stripPrefix $.Values.ingress.gatewayPluginEnabled }}
+      middlewares:
+      {{- if $.Values.ingress.gatewayPluginEnabled }}
+      - name: traefik-gateway-plugin
+        {{- if $.Values.ingress.gatewayPluginNamespace }}
+        namespace: {{ $.Values.ingress.gatewayPluginNamespace }}
+        {{- end }}
+      {{- end }}
+      {{- if $.Values.ingress.stripPrefix }}
+      - name: {{ $.Release.Name }}
+      {{- end }}
+      {{- end }}
+      services:
+        - kind: Service
+          name: {{ $.Release.Name }}
+          port: {{ $.Values.service.port }}
+    {{- end }}
     {{- if .Values.ingress.subdomains }}
     {{- $root := . }}
     {{- range $v := .Values.ingress.subdomains }}

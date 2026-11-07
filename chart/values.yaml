@@ -61,6 +61,9 @@ ingress:
   gatewayPluginEnabled: false
   # Namespace of the traefik-gateway-plugin Middleware CRD (empty = same namespace).
   gatewayPluginNamespace: ""
+  # Additional application hosts served at the same `path` with the same middleware
+  # chain (e.g. [scantinel.ai] on a platform service). Empty = primary host only.
+  extraHosts: []
 
 # --- probes (default ON — go-server serves these on the metrics port) ---
 probes:
