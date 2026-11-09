@@ -41,6 +41,11 @@ printf 'secretEnv:\n  NATS_PASSWORD:\n    secretName: nats-credentials\n    secr
 o=$(helm template t . -f "$tmp/opt.yaml" -s templates/deployment.yaml | yq -r '.spec.template.spec.containers[0].env[] | select(.name=="NATS_PASSWORD") | .valueFrom.secretKeyRef.optional')
 [[ $o == true ]] && ok "secretEnv optional renders optional: true" || bad "secretEnv optional ($o)"
 
+# envVars valueFrom entry superseded by a secretEnv key renders once (1.7.2)
+printf 'envVars:\n  - name: NATS_PASSWORD\n    valueFrom:\n      secretKeyRef:\n        name: old\n        key: k\n' > "$tmp/old.yaml"
+n=$(helm template t . -f "$tmp/old.yaml" -f "$tmp/opt.yaml" -s templates/deployment.yaml | yq -r '[.spec.template.spec.containers[0].env[] | select(.name=="NATS_PASSWORD")] | length')
+[[ $n == 1 ]] && ok "envVars entry superseded by secretEnv renders once" || bad "secretEnv supersede ($n)"
+
 # Scenario 4: POD_NAME (list, field ref) precedes NATS_CLIENT_ID (map).
 printf 'envVars:\n  - name: POD_NAME\n    valueFrom:\n      fieldRef:\n        fieldPath: metadata.name\nenv:\n  NATS_CLIENT_ID: $(POD_NAME)\n' > "$tmp/ref.yaml"
 out=$(envof "$tmp/ref.yaml")

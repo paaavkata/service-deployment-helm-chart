@@ -1,8 +1,13 @@
 # service-deployment-helm-chart
 Helm chart that will be used as a template for all services that run in K8S.
 
-**Current chart version: 1.7.1** (`chart/Chart.yaml`). Every service chart should pin the parent
-at 1.7.1 in its `helm/Chart.yaml` (the pin sweep of platform-architecture-improvements-8).
+**Current chart version: 1.7.2** (`chart/Chart.yaml`). Every service chart should pin the parent
+at 1.7.2 in its `helm/Chart.yaml` (the pin sweep of platform-architecture-improvements-8).
+
+## Version 1.7.2 — env list entry superseded by `secretEnv`
+
+An `envVars` list entry is also skipped when `secretEnv` has the same name, so a `valueFrom`
+secret ref that moved from the list to `secretEnv` never renders twice.
 
 ## Version 1.7.1 — `secretEnv` optional
 

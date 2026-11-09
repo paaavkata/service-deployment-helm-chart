@@ -144,12 +144,14 @@ spec:
               Legacy lists render first, so chart-level field-ref entries
               (POD_NAME) precede map values that expand them with $(NAME).
               A list entry whose name is also a key of the corresponding map
-              is skipped: the map wins and the name renders once (1.7.0).
+              is skipped: the map wins and the name renders once (1.7.0). An
+              envVars entry is also skipped when secretEnv has the name (1.7.2:
+              optional secret refs moving from the env list to secretEnv).
             */}}
             {{- $envMap := .Values.env | default dict }}
             {{- $secretMap := .Values.secretEnv | default dict }}
             {{- range $env := .Values.envVars }}
-            {{- if not (hasKey $envMap $env.name) }}
+            {{- if not (or (hasKey $envMap $env.name) (hasKey $secretMap $env.name)) }}
             {{- if $env.valueFrom }}
             - name: {{ $env.name }}
               valueFrom:
