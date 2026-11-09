@@ -4,6 +4,11 @@ Helm chart that will be used as a template for all services that run in K8S.
 **Current chart version: 1.7.2** (`chart/Chart.yaml`). Every service chart should pin the parent
 at 1.7.2 in its `helm/Chart.yaml` (the pin sweep of platform-architecture-improvements-8).
 
+Environment variables: set them with the `parent.env` and `parent.secretEnv` maps
+(`secretEnv` entries are `{secretName, secretKey, optional}`); see 1.7.0 to 1.7.2 below. The
+`envVars` / `secretEnvVars` lists are legacy: they still render first, and an entry is skipped when
+`env` or `secretEnv` has the same name.
+
 ## Version 1.7.2 — env list entry superseded by `secretEnv`
 
 An `envVars` list entry is also skipped when `secretEnv` has the same name, so a `valueFrom`
