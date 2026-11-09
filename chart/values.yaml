@@ -163,7 +163,8 @@ serviceMonitor:
   labels: {}                     # match your Prometheus serviceMonitorSelector
 
 # --- environment variables (1.7.0: maps merge across values layers) ---
-# `env` (NAME: value) and `secretEnv` (NAME: {secretName, secretKey}) are MAPS:
+# `env` (NAME: value) and `secretEnv` (NAME: {secretName, secretKey[, optional]})
+# are MAPS:
 # Helm merges them key by key across the parent defaults, the service chart's
 # helm/values.yaml and the Argo CD Application's valuesObject, so an
 # Application sets only the keys that differ and every other chart key stays.

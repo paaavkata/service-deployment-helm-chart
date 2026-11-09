@@ -184,6 +184,9 @@ spec:
                 secretKeyRef:
                   name: {{ $s.secretName }}
                   key: {{ $s.secretKey }}
+                  {{- if $s.optional }}
+                  optional: true
+                  {{- end }}
             {{- end }}
             {{- end }}
       {{- $tmpVol := and .Values.securityContext.enabled .Values.securityContext.readOnlyRootFilesystem .Values.writableTmp }}

@@ -36,6 +36,11 @@ printf 'secretEnv:\n  IP_HASH_SALT:\n    secretName: svc-secrets\n    secretKey:
 out=$(envof "$tmp/s1.yaml" "$tmp/s2.yaml")
 if grep -qx 'DB_URI=secret:svc-db/uri' <<<"$out" && grep -qx 'IP_HASH_SALT=secret:svc-secrets/ip-hash-salt' <<<"$out"; then ok "secretEnv merges across layers"; else bad "secretEnv merge"; echo "$out"; fi
 
+# secretEnv optional flag (1.7.1)
+printf 'secretEnv:\n  NATS_PASSWORD:\n    secretName: nats-credentials\n    secretKey: svc\n    optional: true\n' > "$tmp/opt.yaml"
+o=$(helm template t . -f "$tmp/opt.yaml" -s templates/deployment.yaml | yq -r '.spec.template.spec.containers[0].env[] | select(.name=="NATS_PASSWORD") | .valueFrom.secretKeyRef.optional')
+[[ $o == true ]] && ok "secretEnv optional renders optional: true" || bad "secretEnv optional ($o)"
+
 # Scenario 4: POD_NAME (list, field ref) precedes NATS_CLIENT_ID (map).
 printf 'envVars:\n  - name: POD_NAME\n    valueFrom:\n      fieldRef:\n        fieldPath: metadata.name\nenv:\n  NATS_CLIENT_ID: $(POD_NAME)\n' > "$tmp/ref.yaml"
 out=$(envof "$tmp/ref.yaml")

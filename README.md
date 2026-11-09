@@ -1,8 +1,14 @@
 # service-deployment-helm-chart
 Helm chart that will be used as a template for all services that run in K8S.
 
-**Current chart version: 1.7.0** (`chart/Chart.yaml`). Every service chart should pin the parent
-at 1.7.0 in its `helm/Chart.yaml` (the pin sweep of platform-architecture-improvements-8).
+**Current chart version: 1.7.1** (`chart/Chart.yaml`). Every service chart should pin the parent
+at 1.7.1 in its `helm/Chart.yaml` (the pin sweep of platform-architecture-improvements-8).
+
+## Version 1.7.1 — `secretEnv` optional
+
+A `secretEnv` entry may set `optional: true` (renders `secretKeyRef.optional`), so the optional
+per-service credentials (`NATS_PASSWORD`, `INTERNAL_TOKEN*`, `GATEWAY_IDENTITY_KEYS*`) move to the
+map too and no Application needs a list override for them.
 
 ## Version 1.7.0 — `env` / `secretEnv` maps, `image.digest`
 
