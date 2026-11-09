@@ -130,19 +130,19 @@ Published by chart-ci from this repo's main branch — do not push manually.
 
 ## `envVars` / `secretEnvVars` are lists — Argo CD overrides REPLACE, not merge
 
-`envVars` and `secretEnvVars` in `chart/values.yaml` are plain YAML **lists** of
+(Historical, before 1.7.0; the maps above replace this.) `envVars` and `secretEnvVars` in `chart/values.yaml` are plain YAML **lists** of
 `{name, value|valueFrom}` / `{name, secretName, secretKey}` entries, rendered by a
 straight `{{- range $env := .Values.envVars }}` loop in `chart/templates/deployment.yaml`
 (no per-name keying, no merge logic). Helm has no concept of merging two lists by a `name`
-field — when a service's `gitops/application-dev.yaml` (or `-prod.yaml`) sets
+field — when a service's Argo CD Application (`<svc>-dev.yaml` / `-prod.yaml` in infra-gitops) sets
 `helm.valuesObject.parent.envVars` to override even one entry, it **replaces the entire
 list wholesale**; every chart-level `helm/values.yaml` entry not repeated there is silently
 dropped from the running pod. This is a live footgun, not a theoretical one: as of this
 writing, `job-status-service/helm/values.yaml` declares 8 `envVars` (including
-`KUBERNETES_NAMESPACE` and `HTTP_PORT`) but `job-status-service/gitops/application-dev.yaml`
+`KUBERNETES_NAMESPACE` and `HTTP_PORT`) but the `job-status-service-dev` Application
 overrides `parent.envVars` with only 6 entries — `KUBERNETES_NAMESPACE` and `HTTP_PORT` never
 reach the pod. `conversion-status-service` shows the same pattern (11 chart-level entries vs.
-6 in its `gitops/application-dev.yaml` override). **Anyone editing a service's `envVars` or
+6 in its dev Application override). **Anyone editing a service's `envVars` or
 `secretEnvVars` in `helm/values.yaml` must also check whether the matching
-`gitops/application-*.yaml` overrides that same array, and if so, copy the full intended list
+Application in infra-gitops overrides that same array, and if so, copy the full intended list
 into the override rather than adding only the new/changed entry.**
