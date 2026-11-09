@@ -54,7 +54,7 @@ spec:
       {{- end }}
       containers:
         - name: {{ .Release.Name }}
-          image: {{ .Values.image.registry }}/{{ .Values.image.app }}/{{ .Values.image.service }}:{{ .Values.image.tag }}
+          image: {{ .Values.image.registry }}/{{ .Values.image.app }}/{{ .Values.image.service }}:{{ .Values.image.tag }}{{ with .Values.image.digest }}@{{ . }}{{ end }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           {{- if .Values.securityContext.enabled }}
           securityContext:
@@ -140,8 +140,16 @@ spec:
             - name: SWAGGER_SCHEMES
               value: {{ if or (eq .Values.environment "dev") (eq .Values.environment "staging") }}"https"{{ else }}"http"{{ end }}
             {{- end }}
-            {{- if .Values.envVars }}
+            {{- /*
+              Legacy lists render first, so chart-level field-ref entries
+              (POD_NAME) precede map values that expand them with $(NAME).
+              A list entry whose name is also a key of the corresponding map
+              is skipped: the map wins and the name renders once (1.7.0).
+            */}}
+            {{- $envMap := .Values.env | default dict }}
+            {{- $secretMap := .Values.secretEnv | default dict }}
             {{- range $env := .Values.envVars }}
+            {{- if not (hasKey $envMap $env.name) }}
             {{- if $env.valueFrom }}
             - name: {{ $env.name }}
               valueFrom:
@@ -152,13 +160,30 @@ spec:
             {{- end }}
             {{- end }}
             {{- end }}
-            {{- if .Values.secretEnvVars }}
             {{- range $secret := .Values.secretEnvVars }}
+            {{- if not (hasKey $secretMap $secret.name) }}
             - name: {{ $secret.name }}
               valueFrom:
                 secretKeyRef:
                   name: {{ $secret.secretName }}
                   key: {{ $secret.secretKey }}
+            {{- end }}
+            {{- end }}
+            {{- range $name := keys $envMap | sortAlpha }}
+            {{- $v := index $envMap $name }}
+            {{- if not (kindIs "invalid" $v) }}
+            - name: {{ $name }}
+              value: {{ $v | toString | quote }}
+            {{- end }}
+            {{- end }}
+            {{- range $name := keys $secretMap | sortAlpha }}
+            {{- $s := index $secretMap $name }}
+            {{- if $s }}
+            - name: {{ $name }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $s.secretName }}
+                  key: {{ $s.secretKey }}
             {{- end }}
             {{- end }}
       {{- $tmpVol := and .Values.securityContext.enabled .Values.securityContext.readOnlyRootFilesystem .Values.writableTmp }}

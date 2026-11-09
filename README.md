@@ -1,9 +1,45 @@
 # service-deployment-helm-chart
 Helm chart that will be used as a template for all services that run in K8S.
 
-**Current chart version: 1.6.0** (`chart/Chart.yaml`). Most consuming services still pin the
-parent chart at `1.2.0` in their own `helm/Chart.yaml` dependency block — that is a deliberate,
-unbumped pin, not a doc error; don't "fix" a service's pin without checking with its owner first.
+**Current chart version: 1.7.0** (`chart/Chart.yaml`). Every service chart should pin the parent
+at 1.7.0 in its `helm/Chart.yaml` (the pin sweep of platform-architecture-improvements-8).
+
+## Version 1.7.0 — `env` / `secretEnv` maps, `image.digest`
+
+Environment variables are now MAPS that Helm merges key by key across values layers (parent
+defaults, the service chart's `helm/values.yaml`, the Argo CD Application's `valuesObject`):
+
+```yaml
+parent:
+  env:
+    NATS_URL: nats://nats.data-dev:4222
+    LOG_LEVEL: info
+  secretEnv:
+    DB_URI: {secretName: usage-service-db, secretKey: uri}
+```
+
+An Application sets only the keys that differ for its environment; every other key from the
+service chart stays in effect. A key set to `null` in a later layer removes it. Map entries render
+sorted by name, after the legacy lists.
+
+Legacy lists (`envVars`, `secretEnvVars`) still render, first, for one minor (removal in 1.8.0 at
+the earliest, after `infra/infra-gitops/scripts/check-envvars-override.sh` reports zero list
+overrides). A list REPLACES the whole list of a lower layer, which is how chart entries were
+silently dropped in prod; keep in the list only entries that must render before the maps,
+i.e. `valueFrom` field refs such as `POD_NAME` that a map value expands with `$(POD_NAME)`.
+A list entry whose name is also a key of the corresponding map is skipped (the map wins, the
+name renders once). The parent's default `envVars` list is now empty: `ENV` and `HOST` were
+already rendered from `environment` and `host`, and the stale `EMAIL_SERVICE_URL` default is gone
+(no service relied on it; every service overrode the list).
+
+Migration of an Application from lists to maps: `infra/infra-gitops/scripts/migrate-env-to-map.sh`
+(refuses unless the Application's chart depends on parent >= 1.7.0).
+
+`image.digest` (default empty): when set, the image renders as `<tag>@<digest>`. service-ci and
+promote-to-prod record the pushed manifest digest in the Application.
+
+Checks: `chart/tests/env-merge.sh` (merge, list+map, secret merge, ordering, null removal,
+digest) and `chart/tests/render-cases.sh`.
 
 ## Version 1.1.0 — Kubernetes hardening
 

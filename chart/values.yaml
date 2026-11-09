@@ -23,6 +23,9 @@ image:
   app: platform
   service: example-service
   tag: latest
+  # Manifest digest of the pushed image (service-ci records it, 1.7.0). When
+  # set, the reference renders as <tag>@<digest> and the runtime pulls by digest.
+  digest: ""
   pullPolicy: Always
   pullSecret: ""
 
@@ -159,13 +162,25 @@ serviceMonitor:
   namespaceSelector: {}          # defaults to release namespace
   labels: {}                     # match your Prometheus serviceMonitorSelector
 
-envVars:
-  - name: ENV
-    value: dev
-  - name: HOST
-    value: file-convert.online
-  - name: EMAIL_SERVICE_URL
-    value: http://email-service/send-email
+# --- environment variables (1.7.0: maps merge across values layers) ---
+# `env` (NAME: value) and `secretEnv` (NAME: {secretName, secretKey}) are MAPS:
+# Helm merges them key by key across the parent defaults, the service chart's
+# helm/values.yaml and the Argo CD Application's valuesObject, so an
+# Application sets only the keys that differ and every other chart key stays.
+# A key set to null in a later layer removes it. Rendered sorted by name,
+# after the legacy lists.
+env: {}
+secretEnv: {}
+# LEGACY lists (deprecated in 1.7.0, removed in 1.8.0 at the earliest). A list
+# in a later values layer REPLACES the whole list, which is how chart entries
+# were silently dropped; scripts/check-envvars-override.sh in infra-gitops
+# guards services still on the lists. Keep only entries that must render
+# before the maps here (valueFrom field refs such as POD_NAME that map values
+# expand with $(NAME)). A name present in the corresponding map is skipped.
+# APP_PORT, METRICS_PORT, HOST, ENV and SWAGGER_* are rendered by the chart
+# itself from container.*, host, environment and ingress.path.
+envVars: []
+secretEnvVars: []
 
 # Platform attribution label (SERVICEMONITOR.md §4). Defaults to the release
 # name; override only if the app_id must differ from the k8s release name.
